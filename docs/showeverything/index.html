@@ -1,0 +1,309 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Inline Combined Particle Animation</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      min-height: 100vh;
+      background: #f5f5f5;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    }
+
+    .container {
+      position: relative;
+      width: 600px;
+      padding: 20px;
+    }
+
+    .search-container {
+      background: white;
+      padding: 20px;
+      border-radius: 16px;
+      box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
+      transition: box-shadow 0.3s ease;
+    }
+
+    .search-container:hover {
+      box-shadow: 0 6px 12px rgba(0, 0, 0, 0.08);
+    }
+
+    .search-input {
+      width: 100%;
+      padding: 15px;
+      border: none;
+      font-size: 14px;
+      color: #333;
+      outline: none;
+      border-radius: 8px;
+      background: #f9fafb;
+      transition: background 0.3s ease;
+    }
+
+    .search-input:focus {
+      background: #f3f4f6;
+    }
+
+    .button-container {
+      display: flex;
+      gap: 12px;
+      margin-top: 15px;
+    }
+
+    .btn {
+      padding: 8px 16px;
+      border-radius: 12px;
+      border: 1px solid transparent;
+      font-size: 14px;
+      cursor: pointer;
+      transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+      position: relative;
+      overflow: hidden;
+      user-select: none;
+    }
+
+    .btn:active {
+      transform: translateY(1px);
+    }
+
+    #everything {
+      background: white;
+      color: #333;
+      border: 1px solid #e5e7eb;
+      box-shadow: none;
+      transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+
+    #everything:hover {
+      background: #6366f1;
+      color: white;
+      border: 1px solid transparent;
+      box-shadow: 0 4px 6px rgba(99, 102, 241, 0.3);
+    }
+
+    .btn-secondary {
+      background: white;
+      color: #333;
+      border: 1px solid #e5e7eb;
+    }
+
+    .btn-secondary:hover {
+      background: #f9fafb;
+      border-color: #d1d5db;
+    }
+
+    .source-active {
+      animation: sourceGlow 0.5s ease-out;
+    }
+
+    @keyframes sourceGlow {
+      0% { transform: scale(1); }
+      50% { transform: scale(1.02); background: #f3f4f6; }
+      100% { transform: scale(1); }
+    }
+
+    .file-particle {
+      position: absolute;
+      width: 24px;
+      height: 24px;
+      pointer-events: none;
+      opacity: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 16px;
+      filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.1));
+      will-change: transform, opacity;
+    }
+
+    .particle-icon {
+      width: 100%;
+      height: 100%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: rgba(99, 102, 241, 0.15);
+      backdrop-filter: blur(4px);
+      border-radius: 6px;
+      transition: all 0.2s ease;
+    }
+
+    .memories-particle .particle-icon {
+      background: rgba(236, 72, 153, 0.15);
+    }
+
+    @keyframes ripple {
+      0% { transform: scale(1); box-shadow: 0 0 0 0 rgba(99, 102, 241, 0.3); }
+      50% { transform: scale(1.02); box-shadow: 0 0 0 6px rgba(99, 102, 241, 0); }
+      100% { transform: scale(1); box-shadow: 0 0 0 0 rgba(99, 102, 241, 0); }
+    }
+
+    .ripple {
+      animation: ripple 0.6s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="search-container">
+      <input type="text" class="search-input" placeholder="Start Asking...">
+      <div class="button-container">
+        <button class="btn" id="everything">Everything</button>
+        <button class="btn btn-secondary" id="collection">Collection</button>
+        <button class="btn btn-secondary" id="memories">Pages</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const everything = document.getElementById('everything');
+    const collection = document.getElementById('collection');
+    const memories = document.getElementById('memories');
+
+    const collectionTypes = ['📄', '📁', '💼', '📊', '📌', '📎'];
+    const memoriesTypes = ['📷', '🎵', '📽️', '💫', '🎨', '💝'];
+
+    let isAnimating = false;
+    let particleCount = 0;
+    let currentCursorX = 0;
+    let targetEndX = 0;
+
+    function updateCursorPosition(e) {
+      const rect = everything.getBoundingClientRect();
+      currentCursorX = Math.max(rect.left, Math.min(e.clientX, rect.right));
+      targetEndX = currentCursorX;
+    }
+
+    function addSourceActiveEffect(button) {
+      button.classList.add('source-active');
+      setTimeout(() => button.classList.remove('source-active'), 500);
+    }
+
+    function createParticle(startButton, isMemory = false) {
+      const particle = document.createElement('div');
+      particle.className = `file-particle ${isMemory ? 'memories-particle' : ''}`;
+
+      const icon = document.createElement('div');
+      icon.className = 'particle-icon';
+      const iconTypes = isMemory ? memoriesTypes : collectionTypes;
+      icon.textContent = iconTypes[Math.floor(Math.random() * iconTypes.length)];
+      particle.appendChild(icon);
+      document.body.appendChild(particle);
+
+      const startRect = startButton.getBoundingClientRect();
+      const endRect = everything.getBoundingClientRect();
+      const startX = startRect.left + startRect.width / 2;
+      const startY = startRect.top + startRect.height / 2;
+      const endX = targetEndX;
+      const endY = endRect.top;
+
+      const randomOffset = (Math.random() - 0.5) * 40;
+      const heightOffset = isMemory ? -90 : -50;
+
+      const xDistance = endX - startX;
+      const controlX = startX + (xDistance * 0.5) + randomOffset;
+      const controlY = Math.min(startY, endY) + heightOffset - Math.random() * 40;
+
+      particle.style.left = `${startX}px`;
+      particle.style.top = `${startY}px`;
+
+      const duration = 700 + Math.random() * (isMemory ? 300 : 400);
+      const start = performance.now();
+
+      function animate(currentTime) {
+        const elapsed = currentTime - start;
+        const progress = Math.min(elapsed / duration, 1);
+
+        const t = progress;
+        const x = Math.pow(1 - t, 2) * startX +
+                  2 * (1 - t) * t * controlX +
+                  Math.pow(t, 2) * endX;
+        const y = Math.pow(1 - t, 2) * startY +
+                  2 * (1 - t) * t * controlY +
+                  Math.pow(t, 2) * endY;
+
+        const rotation = isMemory ?
+          Math.sin(progress * Math.PI * 2) * 180 :
+          Math.sin(progress * Math.PI * 1.5) * -180;
+
+        const scale = 1 - Math.abs(Math.sin(progress * Math.PI) * 0.2);
+
+        particle.style.transform = `translate(${x - startX}px, ${y - startY}px) rotate(${rotation}deg) scale(${scale})`;
+        particle.style.opacity = progress < 0.8 ? 1 : 1 - ((progress - 0.8) * 5);
+
+        if (progress === 1) {
+          particle.remove();
+          particleCount--;
+          if (particleCount === 0) {
+            everything.classList.add('ripple');
+            setTimeout(() => everything.classList.remove('ripple'), 600);
+          }
+        } else {
+          requestAnimationFrame(animate);
+        }
+      }
+
+      requestAnimationFrame(animate);
+      particleCount++;
+    }
+
+    function startAnimation(button, isMemory = false) {
+      const count = 2 + Math.floor(Math.random() * 2);
+      let launched = 0;
+
+      addSourceActiveEffect(button);
+
+      function launchParticle() {
+        if (launched < count) {
+          createParticle(button, isMemory);
+          launched++;
+          setTimeout(launchParticle, 80 + Math.random() * 120);
+        }
+      }
+
+      launchParticle();
+    }
+
+    function startCombinedAnimation() {
+      if (isAnimating) return;
+      isAnimating = true;
+
+      setTimeout(() => startAnimation(collection, false), 0);
+      setTimeout(() => startAnimation(memories, true), 120);
+      setTimeout(() => isAnimating = false, 1500);
+    }
+
+    everything.addEventListener('mouseenter', startCombinedAnimation);
+    everything.addEventListener('mousemove', updateCursorPosition);
+
+    document.addEventListener('DOMContentLoaded', () => {
+      const rect = everything.getBoundingClientRect();
+      currentCursorX = rect.left + rect.width / 2;
+      targetEndX = currentCursorX;
+    });
+
+    let resizeTimeout;
+    window.addEventListener('resize', () => {
+      clearTimeout(resizeTimeout);
+      resizeTimeout = setTimeout(() => {
+        document.querySelectorAll('.file-particle').forEach(p => p.remove());
+        particleCount = 0;
+        isAnimating = false;
+        const rect = everything.getBoundingClientRect();
+        currentCursorX = rect.left + rect.width / 2;
+        targetEndX = currentCursorX;
+      }, 150);
+    });
+  </script>
+</body>
+</html>
